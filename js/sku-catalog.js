@@ -10,7 +10,7 @@ const SKU_CATALOG = {
 
     // ── Compute OS Licensing ──────────────────────────────────────
     compute: {
-        windowsLicense: { partNumber: 'B88162', label: 'Windows OS License', metric: 'OCPU Per Hour' },
+        windowsLicense: { partNumber: 'B88318', label: 'Windows OS License', metric: 'OCPU Per Hour' },
     },
 
     // ── Block & Boot Volumes ──────────────────────────────────────

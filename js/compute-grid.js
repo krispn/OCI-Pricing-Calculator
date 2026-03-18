@@ -18,7 +18,12 @@ const ComputeGrid = (() => {
     function getOSOptions(shapeName) {
         const shape = getShapeByName(shapeName);
         if (!shape || !shape.supportedOSImages) return ['Oracle Linux'];
-        return shape.supportedOSImages.map(os => os.label);
+        const options = shape.supportedOSImages.map(os => os.label);
+        // Oracle Linux is always available on shapes that support Linux but isn't in shapes.json
+        if (shape.supportedOSImages.some(os => os.type === 'linux') && !options.includes('Oracle Linux')) {
+            options.unshift('Oracle Linux');
+        }
+        return options;
     }
 
     function getVpuOptions() {
@@ -82,7 +87,7 @@ const ComputeGrid = (() => {
         // Windows license add-on
         if (data.os === 'Windows') {
             const winPrice = PricingService.getPrice(SKU_CATALOG.compute.windowsLicense.partNumber);
-            computeHourly += ocpus * winPrice;
+            computeHourly += (data.ocpus || 1) * winPrice;
         }
 
         // Storage costs (monthly)

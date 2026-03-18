@@ -283,8 +283,9 @@ const ExportService = (() => {
                     (row.memoryGb || 0) * unitPrice * hoursPerMonth));
             }
             if (row.os === 'Windows') {
-                const unitPrice = PricingService.getPrice(SKU_CATALOG.compute.windowsLicense.partNumber);
-                items.push(buildItem('B88162', row.ocpus || 1, unitPrice,
+                const winSku = SKU_CATALOG.compute.windowsLicense.partNumber;
+                const unitPrice = PricingService.getPrice(winSku);
+                items.push(buildItem(winSku, row.ocpus || 1, unitPrice,
                     (row.ocpus || 1) * unitPrice * hoursPerMonth));
             }
 
