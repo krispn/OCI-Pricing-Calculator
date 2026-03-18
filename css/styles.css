@@ -1,0 +1,313 @@
+/* ── Reset & Base ──────────────────────────────────────────── */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: #f5f6fa;
+    color: #333;
+    font-size: 14px;
+}
+
+/* ── Header ────────────────────────────────────────────────── */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 24px;
+    background: #1a1a2e;
+    color: #fff;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.app-header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.header-right label {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.header-right select,
+.header-right input {
+    padding: 4px 8px;
+    border: 1px solid #555;
+    border-radius: 4px;
+    background: #2a2a4a;
+    color: #fff;
+    font-size: 13px;
+}
+
+.pricing-status {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    white-space: nowrap;
+}
+
+.pricing-status.fresh {
+    background: #34a853;
+    color: #fff;
+}
+
+.pricing-status.stale {
+    background: #ea4335;
+    color: #fff;
+}
+
+/* ── Buttons ───────────────────────────────────────────────── */
+.btn {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.15s;
+}
+
+.btn-primary {
+    background: #4285f4;
+    color: #fff;
+}
+.btn-primary:hover { background: #3367d6; }
+
+.btn-secondary {
+    background: #5f6368;
+    color: #fff;
+}
+.btn-secondary:hover { background: #4a4e52; }
+
+.btn-danger {
+    background: #ea4335;
+    color: #fff;
+}
+.btn-danger:hover { background: #c5221f; }
+
+/* ── Tab Navigation ────────────────────────────────────────── */
+.tab-nav {
+    display: flex;
+    background: #fff;
+    border-bottom: 2px solid #e0e0e0;
+    padding: 0 24px;
+}
+
+.tab-btn {
+    padding: 10px 24px;
+    border: none;
+    background: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.15s;
+}
+
+.tab-btn:hover {
+    color: #333;
+    background: #f5f5f5;
+}
+
+.tab-btn.active {
+    color: #4285f4;
+    border-bottom-color: #4285f4;
+}
+
+/* ── Tab Content ───────────────────────────────────────────── */
+.tab-content {
+    padding: 0;
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+/* ── Toolbar ───────────────────────────────────────────────── */
+.tab-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    background: #fff;
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.toolbar-spacer {
+    flex: 1;
+}
+
+/* ── Grid Container ────────────────────────────────────────── */
+.grid-container {
+    height: calc(100vh - 260px);
+    min-height: 300px;
+    width: 100%;
+}
+
+/* ── Duplicate Button ──────────────────────────────────────── */
+.btn-duplicate {
+    background: none;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 2px 4px;
+    color: #666;
+}
+.btn-duplicate:hover {
+    background: #e8f0fe;
+    border-color: #4285f4;
+    color: #4285f4;
+}
+
+/* ── Totals Bar ────────────────────────────────────────────── */
+.tab-totals {
+    padding: 10px 24px;
+    background: #e8f0fe;
+    border-top: 2px solid #4285f4;
+    font-size: 14px;
+    color: #1a73e8;
+}
+
+/* ── Summary Tab ───────────────────────────────────────────── */
+.summary-container {
+    display: flex;
+    gap: 40px;
+    padding: 24px;
+    flex-wrap: wrap;
+}
+
+.summary-table-wrapper {
+    flex: 1;
+    min-width: 300px;
+}
+
+.summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.summary-table th {
+    background: #1a1a2e;
+    color: #fff;
+    padding: 10px 16px;
+    text-align: left;
+    font-weight: 500;
+}
+
+.summary-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.summary-grand-total td {
+    font-weight: 700;
+    font-size: 16px;
+    background: #e8f0fe;
+    color: #1a73e8;
+    border-top: 2px solid #4285f4;
+}
+
+/* ── Bar Chart ─────────────────────────────────────────────── */
+.summary-chart {
+    flex: 1;
+    min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    justify-content: center;
+}
+
+.chart-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.chart-label {
+    width: 80px;
+    font-weight: 500;
+    font-size: 13px;
+    text-align: right;
+}
+
+.chart-bar-bg {
+    flex: 1;
+    height: 28px;
+    background: #e8e8e8;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.chart-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    min-width: 2px;
+}
+
+.chart-value {
+    width: 100px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #333;
+}
+
+/* ── Summary Actions ───────────────────────────────────────── */
+.summary-actions {
+    display: flex;
+    gap: 10px;
+    padding: 0 24px 24px;
+}
+
+/* ── AG Grid Overrides ─────────────────────────────────────── */
+.ag-theme-alpine {
+    --ag-header-background-color: #f8f9fa;
+    --ag-odd-row-background-color: #fafbfc;
+    --ag-row-hover-color: #e8f0fe;
+    --ag-selected-row-background-color: #d2e3fc;
+    --ag-font-size: 13px;
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .app-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .summary-container {
+        flex-direction: column;
+    }
+    .grid-container {
+        height: calc(100vh - 300px);
+    }
+}
