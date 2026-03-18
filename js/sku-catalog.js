@@ -94,6 +94,29 @@ const SKU_CATALOG = {
         },
     },
 
+    // ── Networking ────────────────────────────────────────────────
+    networking: {
+        loadBalancer: {
+            base:      { partNumber: 'B93030', label: 'Load Balancer - Base', metric: 'Per Hour' },
+            bandwidth: { partNumber: 'B93031', label: 'Load Balancer - Bandwidth', metric: 'Mbps Per Hour' },
+        },
+        // Network Load Balancer is free — no SKU
+        networkLoadBalancer: { sku: 'FR00013', label: 'Network Load Balancer (Free)', metric: 'Per Hour' },
+        fastConnect: {
+            '1 Gbps':   { partNumber: 'B88325', label: 'FastConnect 1 Gbps', metric: 'Port Hour' },
+            '10 Gbps':  { partNumber: 'B88326', label: 'FastConnect 10 Gbps', metric: 'Port Hour' },
+            '100 Gbps': { partNumber: 'B93126', label: 'FastConnect 100 Gbps', metric: 'Port Hour' },
+            '400 Gbps': { partNumber: 'B107975', label: 'FastConnect 400 Gbps', metric: 'Port Hour' },
+        },
+    },
+
+    // ── Full Stack Disaster Recovery ───────────────────────────────
+    fsdr: {
+        ocpu: { partNumber: 'B95485', label: 'FSDR - OCPU', metric: 'OCPU/hour' },
+        ecpu: { partNumber: 'B110274', label: 'FSDR - ECPU', metric: 'ECPU/hour' },
+        oicMessagePacks: { partNumber: 'B112110', label: 'FSDR - OIC Message Packs', metric: '5K Messages/hour' },
+    },
+
     // ── Reserved / Committed Pricing Discounts ────────────────────
     // Oracle doesn't expose these via public API; these are approximate
     // discount percentages off PAY_AS_YOU_GO rates.
@@ -113,13 +136,21 @@ const SKU_CATALOG = {
             autonomousDb: 1661,
             autonomousJson: 825,
             mysql: 581,
+            loadBalancer: 885,
+            networkLoadBalancer: 2641,
+            fastConnect: 901,
             exadataInfra: 2861,
             exadataEcpu: 2862,
+            fsdr: 2141,
         },
         presetIds: {
             blockVolumes: 74,
+            blockVolumesStandalone: 1221,
             objectStorage: 61,
             exadata: 462,
+            networking: 1903,
+            fastConnect: 1904,
+            fsdr: 1541,
         },
         freeBlockVolumeSku: 'B91445',
     },

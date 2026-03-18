@@ -47,6 +47,7 @@ const ComputeGrid = (() => {
             blockVolumeGb: 0,
             blockVolumePerf: 'Balanced (10 VPU)',
             capacityType: 'On-Demand',
+            fsdr: false,
             quantity: 1,
             hourlyRate: 0,
             monthlyRate: 0,
@@ -100,6 +101,13 @@ const ComputeGrid = (() => {
         const blockVpus = getVpuValue(data.blockVolumePerf);
         const blockMonthly = (data.blockVolumeGb || 0) * (storageBasePrice + (blockVpus * perfUnitPrice));
 
+        // FSDR cost (moving compute: charged in primary region only, per OCPU/hr)
+        let fsdrMonthly = 0;
+        if (data.fsdr) {
+            const fsdrPrice = PricingService.getPrice(SKU_CATALOG.fsdr.ocpu.partNumber);
+            fsdrMonthly = (data.ocpus || 1) * fsdrPrice * HOURS_PER_MONTH();
+        }
+
         // Apply capacity discount
         let discount = 0;
         if (data.capacityType === 'Reserved 1Y') discount = SKU_CATALOG.reservedDiscounts['1yr'];
@@ -107,7 +115,7 @@ const ComputeGrid = (() => {
 
         const effectiveHourly = computeHourly * (1 - discount);
         const monthlyCompute = effectiveHourly * HOURS_PER_MONTH();
-        const monthlyTotal = monthlyCompute + bootMonthly + blockMonthly;
+        const monthlyTotal = monthlyCompute + bootMonthly + blockMonthly + fsdrMonthly;
 
         return {
             hourlyRate: effectiveHourly * (data.quantity || 1),
@@ -290,6 +298,13 @@ const ComputeGrid = (() => {
             cellEditorParams: { values: ['On-Demand', 'Preemptible', 'Reserved 1Y', 'Reserved 3Y'] },
         },
         {
+            headerName: 'FSDR',
+            field: 'fsdr',
+            editable: true,
+            width: 65,
+            cellDataType: 'boolean',
+        },
+        {
             headerName: 'Qty',
             field: 'quantity',
             editable: true,
@@ -384,5 +399,33 @@ const ComputeGrid = (() => {
         return total;
     }
 
-    return { init, recalcAll, getGridApi, getAllData, loadData, getMonthlyTotal };
+    /**
+     * Get monthly cost of replicated boot+block volumes for FSDR rows.
+     * DR storage uses Lower Cost (0 VPU) performance tier.
+     */
+    function getDrStorageMonthly() {
+        let total = 0;
+        const storageBasePrice = PricingService.getPrice(SKU_CATALOG.storage.blockVolume.storage.partNumber);
+        // DR storage at 0 VPU (Lower Cost) — no performance unit charge
+        gridApi.forEachNode(node => {
+            const d = node.data;
+            if (!d.fsdr) return;
+            const drGb = (d.bootVolumeGb || 0) + (d.blockVolumeGb || 0);
+            total += drGb * storageBasePrice * (d.quantity || 1);
+        });
+        return total;
+    }
+
+    function getFsdrMonthly() {
+        let total = 0;
+        const fsdrPrice = PricingService.getPrice(SKU_CATALOG.fsdr.ocpu.partNumber);
+        gridApi.forEachNode(node => {
+            const d = node.data;
+            if (!d.fsdr) return;
+            total += (d.ocpus || 1) * fsdrPrice * HOURS_PER_MONTH() * (d.quantity || 1);
+        });
+        return total;
+    }
+
+    return { init, recalcAll, getGridApi, getAllData, loadData, getMonthlyTotal, getDrStorageMonthly, getFsdrMonthly };
 })();

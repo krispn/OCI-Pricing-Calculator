@@ -1,34 +1,28 @@
 /**
- * Database Grid — AG Grid configuration for the Database tab.
+ * Network Grid — AG Grid configuration for the Networking tab.
  */
-const DatabaseGrid = (() => {
+const NetworkGrid = (() => {
     let gridApi = null;
     let onTotalsChanged = null;
 
     const HOURS_PER_MONTH = () => parseInt(document.getElementById('hours-month')?.value) || 744;
 
-    // Base Database Service definitions with their SKU mappings
-    const DB_SERVICES = {
-        'Standard (OCPU)':         { computeSku: 'B90569', unit: 'OCPU', hasStorage: true },
-        'Enterprise (OCPU)':       { computeSku: 'B90570', unit: 'OCPU', hasStorage: true },
-        'High Performance (OCPU)': { computeSku: 'B90571', unit: 'OCPU', hasStorage: true },
-        'Extreme Performance (OCPU)': { computeSku: 'B90572', unit: 'OCPU', hasStorage: true },
-        'BYOL (OCPU)':             { computeSku: 'B90573', unit: 'OCPU', hasStorage: true },
-        'Standard (ECPU)':         { computeSku: 'B111585', unit: 'ECPU', hasStorage: true },
-        'Enterprise (ECPU)':       { computeSku: 'B111586', unit: 'ECPU', hasStorage: true },
-        'High Perf (ECPU)':        { computeSku: 'B111587', unit: 'ECPU', hasStorage: true },
-        'BYOL (ECPU)':             { computeSku: 'B111588', unit: 'ECPU', hasStorage: true },
+    const NETWORK_SERVICES = {
+        'Load Balancer':         { type: 'lb' },
+        'Network Load Balancer': { type: 'nlb' },
+        'FastConnect 1 Gbps':    { type: 'fc', sku: 'B88325' },
+        'FastConnect 10 Gbps':   { type: 'fc', sku: 'B88326' },
+        'FastConnect 100 Gbps':  { type: 'fc', sku: 'B93126' },
+        'FastConnect 400 Gbps':  { type: 'fc', sku: 'B107975' },
     };
 
-    const SERVICE_NAMES = Object.keys(DB_SERVICES);
+    const SERVICE_NAMES = Object.keys(NETWORK_SERVICES);
 
     function createDefaultRow() {
         return {
             description: '',
-            service: 'Standard (OCPU)',
-            cpuCount: 1,
-            storageGb: 256,
-            fsdr: false,
+            service: 'Load Balancer',
+            lbBandwidthMbps: 10,
             quantity: 1,
             hourlyRate: 0,
             monthlyRate: 0,
@@ -37,37 +31,29 @@ const DatabaseGrid = (() => {
     }
 
     function calculateRowCost(data) {
-        const svcDef = DB_SERVICES[data.service];
+        const svcDef = NETWORK_SERVICES[data.service];
         if (!svcDef) return { hourlyRate: 0, monthlyRate: 0 };
 
-        // Compute cost (hourly)
-        const computePrice = PricingService.getPrice(svcDef.computeSku);
-        const computeHourly = (data.cpuCount || 0) * computePrice;
+        let hourly = 0;
 
-        // Storage cost (monthly)
-        let storageMonthlyCost = 0;
-        if (svcDef.hasStorage) {
-            const storageSku = svcDef.storageSku || SKU_CATALOG.database.baseDbStorage.partNumber;
-            const storagePrice = PricingService.getPrice(storageSku);
-            storageMonthlyCost = (data.storageGb || 0) * storagePrice;
+        if (svcDef.type === 'lb') {
+            // Load Balancer: base + bandwidth per Mbps
+            const basePrice = PricingService.getPrice(SKU_CATALOG.networking.loadBalancer.base.partNumber);
+            const bwPrice = PricingService.getPrice(SKU_CATALOG.networking.loadBalancer.bandwidth.partNumber);
+            hourly = basePrice + (data.lbBandwidthMbps || 0) * bwPrice;
+        } else if (svcDef.type === 'nlb') {
+            // Network Load Balancer is free
+            hourly = 0;
+        } else if (svcDef.type === 'fc') {
+            // FastConnect: per port per hour
+            hourly = PricingService.getPrice(svcDef.sku);
         }
 
-        // FSDR cost (databases: charged in BOTH primary + standby = 2x CPUs)
-        let fsdrMonthly = 0;
-        if (data.fsdr) {
-            const isEcpu = svcDef.unit === 'ECPU';
-            const fsdrSku = isEcpu ? SKU_CATALOG.fsdr.ecpu.partNumber : SKU_CATALOG.fsdr.ocpu.partNumber;
-            const fsdrPrice = PricingService.getPrice(fsdrSku);
-            // 2x because DB is protected in both primary and standby regions
-            fsdrMonthly = (data.cpuCount || 0) * 2 * fsdrPrice * HOURS_PER_MONTH();
-        }
-
-        const monthlyCompute = computeHourly * HOURS_PER_MONTH();
-        const monthlyTotal = monthlyCompute + storageMonthlyCost + fsdrMonthly;
+        const monthly = hourly * HOURS_PER_MONTH();
 
         return {
-            hourlyRate: computeHourly * (data.quantity || 1),
-            monthlyRate: monthlyTotal * (data.quantity || 1),
+            hourlyRate: hourly * (data.quantity || 1),
+            monthlyRate: monthly * (data.quantity || 1),
         };
     }
 
@@ -88,9 +74,9 @@ const DatabaseGrid = (() => {
             totalHourly += node.data.hourlyRate || 0;
             totalMonthly += node.data.monthlyRate || 0;
         });
-        const el = document.getElementById('database-totals');
+        const el = document.getElementById('network-totals');
         if (el) {
-            el.innerHTML = `<strong>Database Totals:</strong> $${totalHourly.toFixed(4)}/hr &nbsp;|&nbsp; $${totalMonthly.toFixed(2)}/month`;
+            el.innerHTML = `<strong>Network Totals:</strong> $${totalHourly.toFixed(4)}/hr &nbsp;|&nbsp; $${totalMonthly.toFixed(2)}/month`;
         }
         if (onTotalsChanged) onTotalsChanged();
     }
@@ -103,9 +89,9 @@ const DatabaseGrid = (() => {
         updateTotals();
     }
 
-    function getCpuLabel(params) {
-        const svcDef = DB_SERVICES[params.data?.service];
-        return svcDef ? svcDef.unit + 's' : 'CPUs';
+    function isLb(params) {
+        const svcDef = NETWORK_SERVICES[params.data?.service];
+        return svcDef?.type === 'lb';
     }
 
     const columnDefs = [
@@ -147,40 +133,20 @@ const DatabaseGrid = (() => {
             width: 200,
         },
         {
-            headerName: 'Edition',
+            headerName: 'Service',
             field: 'service',
             editable: true,
-            width: 250,
+            width: 220,
             cellEditor: 'agSelectCellEditor',
             cellEditorParams: { values: SERVICE_NAMES },
         },
         {
-            headerName: 'OCPUs / ECPUs',
-            field: 'cpuCount',
-            editable: true,
-            width: 130,
+            headerName: 'Bandwidth (Mbps)',
+            field: 'lbBandwidthMbps',
+            editable: (params) => isLb(params),
+            width: 150,
             type: 'numericColumn',
-        },
-        {
-            headerName: 'Storage (GB)',
-            field: 'storageGb',
-            editable: (params) => {
-                const svcDef = DB_SERVICES[params.data?.service];
-                return svcDef?.hasStorage !== false;
-            },
-            width: 110,
-            type: 'numericColumn',
-            cellStyle: (params) => {
-                const svcDef = DB_SERVICES[params.data?.service];
-                return svcDef?.hasStorage === false ? { backgroundColor: '#f0f0f0' } : {};
-            },
-        },
-        {
-            headerName: 'FSDR',
-            field: 'fsdr',
-            editable: true,
-            width: 65,
-            cellDataType: 'boolean',
+            cellStyle: (params) => isLb(params) ? {} : { backgroundColor: '#f0f0f0' },
         },
         {
             headerName: 'Qty',
@@ -235,7 +201,7 @@ const DatabaseGrid = (() => {
         const container = document.getElementById(containerId);
         gridApi = agGrid.createGrid(container, gridOptions);
 
-        document.getElementById('btn-add-database').addEventListener('click', () => {
+        document.getElementById('btn-add-network').addEventListener('click', () => {
             const newRow = createDefaultRow();
             const costs = calculateRowCost(newRow);
             newRow.hourlyRate = costs.hourlyRate;
@@ -244,7 +210,7 @@ const DatabaseGrid = (() => {
             updateTotals();
         });
 
-        document.getElementById('btn-delete-database').addEventListener('click', () => {
+        document.getElementById('btn-delete-network').addEventListener('click', () => {
             const selected = gridApi.getSelectedRows();
             if (selected.length > 0) {
                 gridApi.applyTransaction({ remove: selected });
@@ -252,8 +218,8 @@ const DatabaseGrid = (() => {
             }
         });
 
-        document.getElementById('btn-export-database-csv').addEventListener('click', () => {
-            gridApi.exportDataAsCsv({ fileName: 'oci-database-estimate.csv' });
+        document.getElementById('btn-export-network-csv').addEventListener('click', () => {
+            gridApi.exportDataAsCsv({ fileName: 'oci-network-estimate.csv' });
         });
     }
 
@@ -276,35 +242,5 @@ const DatabaseGrid = (() => {
         return total;
     }
 
-    /**
-     * Get monthly cost of replicated DB storage for FSDR rows.
-     * DR storage at Lower Cost (0 VPU).
-     */
-    function getDrStorageMonthly() {
-        let total = 0;
-        const storagePrice = PricingService.getPrice(SKU_CATALOG.database.baseDbStorage.partNumber);
-        gridApi.forEachNode(node => {
-            const d = node.data;
-            if (!d.fsdr) return;
-            total += (d.storageGb || 0) * storagePrice * (d.quantity || 1);
-        });
-        return total;
-    }
-
-    function getFsdrMonthly() {
-        let total = 0;
-        gridApi.forEachNode(node => {
-            const d = node.data;
-            if (!d.fsdr) return;
-            const svcDef = DB_SERVICES[d.service];
-            if (!svcDef) return;
-            const isEcpu = svcDef.unit === 'ECPU';
-            const fsdrSku = isEcpu ? SKU_CATALOG.fsdr.ecpu.partNumber : SKU_CATALOG.fsdr.ocpu.partNumber;
-            const fsdrPrice = PricingService.getPrice(fsdrSku);
-            total += (d.cpuCount || 0) * 2 * fsdrPrice * HOURS_PER_MONTH() * (d.quantity || 1);
-        });
-        return total;
-    }
-
-    return { init, recalcAll, getGridApi, getAllData, loadData, getMonthlyTotal, getDrStorageMonthly, getFsdrMonthly };
+    return { init, recalcAll, getGridApi, getAllData, loadData, getMonthlyTotal };
 })();

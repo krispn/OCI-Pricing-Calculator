@@ -24,6 +24,7 @@ const AutonomousDbGrid = (() => {
             service: 'Lakehouse (ECPU)',
             ecpuCount: 2,
             storageGb: 1024,
+            fsdr: false,
             quantity: 1,
             hourlyRate: 0,
             monthlyRate: 0,
@@ -45,7 +46,14 @@ const AutonomousDbGrid = (() => {
             storageMonthly = (data.storageGb || 0) * storagePrice;
         }
 
-        const totalMonthly = (computeHourly * HOURS_PER_MONTH()) + storageMonthly;
+        // FSDR cost (databases: charged in BOTH primary + standby = 2x ECPUs)
+        let fsdrMonthly = 0;
+        if (data.fsdr && svcDef.hasEcpu) {
+            const fsdrPrice = PricingService.getPrice(SKU_CATALOG.fsdr.ecpu.partNumber);
+            fsdrMonthly = (data.ecpuCount || 0) * 2 * fsdrPrice * HOURS_PER_MONTH();
+        }
+
+        const totalMonthly = (computeHourly * HOURS_PER_MONTH()) + storageMonthly + fsdrMonthly;
 
         return {
             hourlyRate: computeHourly * (data.quantity || 1),
@@ -158,6 +166,13 @@ const AutonomousDbGrid = (() => {
             cellStyle: (params) => hasStorage(params) ? {} : { backgroundColor: '#f0f0f0' },
         },
         {
+            headerName: 'FSDR',
+            field: 'fsdr',
+            editable: true,
+            width: 65,
+            cellDataType: 'boolean',
+        },
+        {
             headerName: 'Qty',
             field: 'quantity',
             editable: true,
@@ -251,5 +266,34 @@ const AutonomousDbGrid = (() => {
         return total;
     }
 
-    return { init, recalcAll, getGridApi, getAllData, loadData, getMonthlyTotal };
+    /**
+     * Get monthly cost of replicated Autonomous DB storage for FSDR rows.
+     */
+    function getDrStorageMonthly() {
+        let total = 0;
+        gridApi.forEachNode(node => {
+            const d = node.data;
+            if (!d.fsdr) return;
+            const svcDef = AUTO_SERVICES[d.service];
+            if (!svcDef?.storageSku) return;
+            const storagePrice = PricingService.getPrice(svcDef.storageSku);
+            total += (d.storageGb || 0) * storagePrice * (d.quantity || 1);
+        });
+        return total;
+    }
+
+    function getFsdrMonthly() {
+        let total = 0;
+        gridApi.forEachNode(node => {
+            const d = node.data;
+            if (!d.fsdr) return;
+            const svcDef = AUTO_SERVICES[d.service];
+            if (!svcDef?.hasEcpu) return;
+            const fsdrPrice = PricingService.getPrice(SKU_CATALOG.fsdr.ecpu.partNumber);
+            total += (d.ecpuCount || 0) * 2 * fsdrPrice * HOURS_PER_MONTH() * (d.quantity || 1);
+        });
+        return total;
+    }
+
+    return { init, recalcAll, getGridApi, getAllData, loadData, getMonthlyTotal, getDrStorageMonthly, getFsdrMonthly };
 })();

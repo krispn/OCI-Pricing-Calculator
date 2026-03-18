@@ -39,6 +39,7 @@
     DatabaseGrid.init('database-grid', updateSummary);
     ExadataGrid.init('exadata-grid', updateSummary);
     AutonomousDbGrid.init('autonomous-db-grid', updateSummary);
+    NetworkGrid.init('network-grid', updateSummary);
 
     // ── Tab Navigation ────────────────────────────────────────────
     const tabBtns = document.querySelectorAll('.tab-btn');
@@ -58,13 +59,22 @@
 
     // ── Summary ───────────────────────────────────────────────────
     function updateSummary() {
-        const computeTotal = ComputeGrid.getMonthlyTotal();
+        // Get raw totals (which include FSDR costs embedded within)
+        const fsdrCompute = ComputeGrid.getFsdrMonthly();
+        const fsdrDatabase = DatabaseGrid.getFsdrMonthly();
+        const fsdrAutonomous = AutonomousDbGrid.getFsdrMonthly();
+        const fsdrTotal = fsdrCompute + fsdrDatabase + fsdrAutonomous;
+
+        // Subtract FSDR from each grid's total to show it separately
+        const computeTotal = ComputeGrid.getMonthlyTotal() - fsdrCompute;
         const objectStorageTotal = ObjectStorageGrid.getMonthlyTotal();
         const fileStorageTotal = FileStorageGrid.getMonthlyTotal();
-        const databaseTotal = DatabaseGrid.getMonthlyTotal();
+        const databaseTotal = DatabaseGrid.getMonthlyTotal() - fsdrDatabase;
         const exadataTotal = ExadataGrid.getMonthlyTotal();
-        const autonomousTotal = AutonomousDbGrid.getMonthlyTotal();
-        const grandTotal = computeTotal + objectStorageTotal + fileStorageTotal + databaseTotal + exadataTotal + autonomousTotal;
+        const autonomousTotal = AutonomousDbGrid.getMonthlyTotal() - fsdrAutonomous;
+        const networkTotal = NetworkGrid.getMonthlyTotal();
+        const drStorageTotal = ComputeGrid.getDrStorageMonthly() + DatabaseGrid.getDrStorageMonthly() + AutonomousDbGrid.getDrStorageMonthly();
+        const grandTotal = computeTotal + objectStorageTotal + fileStorageTotal + databaseTotal + exadataTotal + autonomousTotal + networkTotal + fsdrTotal + drStorageTotal;
 
         const body = document.getElementById('summary-body');
         const categories = [
@@ -74,6 +84,9 @@
             { name: 'Base DB', total: databaseTotal, color: '#ea4335' },
             { name: 'Exadata', total: exadataTotal, color: '#9c27b0' },
             { name: 'Autonomous DB', total: autonomousTotal, color: '#ff6d00' },
+            { name: 'Network', total: networkTotal, color: '#00bcd4' },
+            { name: 'FSDR', total: fsdrTotal, color: '#795548' },
+            { name: 'DR Storage', total: drStorageTotal, color: '#607d8b' },
         ];
 
         body.innerHTML = categories.map(cat => {
@@ -117,6 +130,7 @@
             DatabaseGrid.recalcAll();
             ExadataGrid.recalcAll();
             AutonomousDbGrid.recalcAll();
+            NetworkGrid.recalcAll();
             updateSummary();
         } else {
             statusEl.textContent = 'No pricing data — run: bash update-prices.sh';
@@ -130,6 +144,7 @@
         DatabaseGrid.recalcAll();
         ExadataGrid.recalcAll();
         AutonomousDbGrid.recalcAll();
+        NetworkGrid.recalcAll();
         updateSummary();
     });
 
