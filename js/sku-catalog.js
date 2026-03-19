@@ -129,6 +129,7 @@ const SKU_CATALOG = {
     oracleExport: {
         serviceIds: {
             computeVm: 822,
+            computeOsImages: 827,
             blockVolumes: 881,
             objectStorage: 882,
             fileStorage: 862,

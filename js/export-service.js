@@ -295,6 +295,8 @@ const ExportService = (() => {
 
             const services = [];
             const computeUuid = crypto.randomUUID();
+            const computeUtil = buildUtilization(hoursPerMonth);
+            computeUtil.instances = row.quantity || 1;
 
             // Main compute service
             const ocpuProduct = shape.products?.find(p => p.type?.value === 'ocpu');
@@ -313,20 +315,13 @@ const ExportService = (() => {
                 items.push(buildItem(memProduct.partNumber, row.memoryGb || 0, unitPrice,
                     (row.memoryGb || 0) * unitPrice * hoursPerMonth));
             }
-            if (row.os === 'Windows') {
-                const winSku = SKU_CATALOG.compute.windowsLicense.partNumber;
-                const unitPrice = PricingService.getPrice(winSku);
-                items.push(buildItem(winSku, row.ocpus || 1, unitPrice,
-                    (row.ocpus || 1) * unitPrice * hoursPerMonth));
-            }
-
             const reservedPct = row.capacityType === 'Reserved 1Y' ? 42
                 : row.capacityType === 'Reserved 3Y' ? 60 : 0;
 
             const computeService = {
                 id: ids.computeVm,
                 label: 'Compute - Virtual Machine',
-                utilization: buildUtilization(hoursPerMonth),
+                utilization: computeUtil,
                 items,
                 uiState: {
                     selectedOSExtended: getOsExtendedValue(row.shape, row.os),
@@ -344,15 +339,36 @@ const ExportService = (() => {
                 },
                 shapeName: row.shape,
                 shapeID: shape.id,
+                uuid: computeUuid,
                 isFromShape: true,
             };
 
-            // Only add uuid if we need to link boot/block volumes
-            if ((row.bootVolumeGb || 0) > 0 || (row.blockVolumeGb || 0) > 0) {
-                computeService.uuid = computeUuid;
-            }
-
             services.push(computeService);
+
+            // Windows OS licensing — separate service linked to compute via serviceRef
+            if (row.os === 'Windows') {
+                const winSku = SKU_CATALOG.compute.windowsLicense.partNumber;
+                const unitPrice = PricingService.getPrice(winSku);
+                const ocpus = row.ocpus || 1;
+                services.push({
+                    id: ids.computeOsImages,
+                    label: 'Compute - OS Images',
+                    utilization: computeUtil,
+                    items: [{
+                        sku: winSku,
+                        quantity: ocpus,
+                        minQuantity: ocpus,
+                        unitPrice,
+                        monthlyCost: Math.round(ocpus * unitPrice * hoursPerMonth * 100) / 100,
+                    }],
+                    uiState: {
+                        selectedBurstableBaseline: 'none',
+                    },
+                    presetID: null,
+                    serviceRef: computeUuid,
+                    isFromShape: false,
+                });
+            }
 
             // Boot volume service
             if ((row.bootVolumeGb || 0) > 0) {
@@ -365,7 +381,7 @@ const ExportService = (() => {
                 services.push({
                     id: ids.blockVolumes,
                     label: 'Storage - Block Volumes',
-                    utilization: buildUtilization(hoursPerMonth),
+                    utilization: computeUtil,
                     items: [
                         buildItem(SKU_CATALOG.oracleExport.freeBlockVolumeSku, 0, 0, 0),
                         buildItem('B91961', bootGb, storagePrice, bootGb * storagePrice),
@@ -398,7 +414,7 @@ const ExportService = (() => {
                 services.push({
                     id: ids.blockVolumes,
                     label: 'Storage - Block Volumes',
-                    utilization: buildUtilization(hoursPerMonth),
+                    utilization: computeUtil,
                     items: [
                         buildItem(SKU_CATALOG.oracleExport.freeBlockVolumeSku, 0, 0, 0),
                         buildItem('B91961', blockGb, storagePrice, blockGb * storagePrice),
@@ -946,7 +962,7 @@ const ExportService = (() => {
                     utilization: buildUtilization(hoursPerMonth),
                     items: [
                         { sku: 'B91445', quantity: 0, inPreset: true, unitPrice: 0, monthlyCost: 0 },
-                        { sku: 'B91961', quantity: totalDrGb, inPreset: true, unitPrice: storagePrice, monthlyCost: totalDrGb * storagePrice },
+                        { sku: 'B91961', quantity: totalDrGb, inPreset: true, unitPrice: storagePrice, monthlyCost: Math.round(totalDrGb * storagePrice * 100) / 100 },
                         { sku: 'B91962', quantity: 0, inPreset: true, unitPrice: perfPrice, monthlyCost: 0 },
                     ],
                     uiState: {
