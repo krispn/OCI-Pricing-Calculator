@@ -3,6 +3,17 @@
  */
 const ExportService = (() => {
 
+    // generateUUID() requires HTTPS; fallback for plain HTTP
+    function generateUUID() {
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+            return generateUUID();
+        }
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+            const r = (Math.random() * 16) | 0;
+            return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+        });
+    }
+
     /**
      * Export all tabs to a multi-sheet Excel workbook.
      */
@@ -294,7 +305,7 @@ const ExportService = (() => {
             if (!shape) continue;
 
             const services = [];
-            const computeUuid = crypto.randomUUID();
+            const computeUuid = generateUUID();
             const computeUtil = buildUtilization(hoursPerMonth);
             computeUtil.instances = row.quantity || 1;
 
@@ -623,7 +634,7 @@ const ExportService = (() => {
             const smartStPrice = PricingService.getPrice('B107952');
             const flashPrice = PricingService.getPrice('B109375');
 
-            const infraUuid = crypto.randomUUID();
+            const infraUuid = generateUUID();
             const util = buildUtilization(hoursPerMonth);
             util.instances = row.quantity || 1;
 
