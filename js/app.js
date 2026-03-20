@@ -59,6 +59,14 @@
 
     // ── Summary ───────────────────────────────────────────────────
     function updateSummary() {
+        // Update default backup row in Object Storage (3x compute boot+block)
+        let totalComputeStorageGb = 0;
+        ComputeGrid.getAllData().forEach(row => {
+            const qty = row.quantity || 1;
+            totalComputeStorageGb += ((row.bootVolumeGb || 0) + (row.blockVolumeGb || 0)) * qty;
+        });
+        setTimeout(() => ObjectStorageGrid.updateBackupRow(totalComputeStorageGb), 0);
+
         // Get raw totals (which include FSDR costs embedded within)
         const fsdrCompute = ComputeGrid.getFsdrMonthly();
         const fsdrDatabase = DatabaseGrid.getFsdrMonthly();
@@ -99,6 +107,7 @@
         }).join('');
 
         document.getElementById('summary-grand-total').textContent = '$' + grandTotal.toFixed(2);
+        document.getElementById('running-total').textContent = '$' + grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '/month';
 
         // Bar chart
         const chartEl = document.getElementById('summary-chart');
@@ -113,9 +122,55 @@
                 <span class="chart-value">$${cat.total.toFixed(2)}</span>
             </div>`;
         }).join('');
+
+        // Annual cost projection
+        updateAnnualProjection(grandTotal);
+    }
+
+    function updateAnnualProjection(monthlyTotal) {
+        const discountPct = parseFloat(document.getElementById('annual-discount')?.value) || 0;
+        const years = parseInt(document.getElementById('projection-years')?.value) || 3;
+        const discount = discountPct / 100;
+        const discountedMonthly = monthlyTotal * (1 - discount);
+
+        const fmt = (v) => '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        const body = document.getElementById('annual-body');
+        let cumulative = 0;
+        const rows = [];
+        for (let y = 1; y <= years; y++) {
+            const annual = discountedMonthly * 12;
+            cumulative += annual;
+            rows.push(`<tr>
+                <td>Year ${y}</td>
+                <td>${fmt(discountedMonthly)}</td>
+                <td>${fmt(annual)}</td>
+                <td>${fmt(cumulative)}</td>
+            </tr>`);
+        }
+
+        if (discountPct > 0) {
+            const savingsMonthly = monthlyTotal - discountedMonthly;
+            const savingsTotal = savingsMonthly * 12 * years;
+            rows.push(`<tr style="color: #34a853; font-style: italic;">
+                <td>Savings (${discountPct}%)</td>
+                <td>${fmt(savingsMonthly)}</td>
+                <td>${fmt(savingsMonthly * 12)}</td>
+                <td>${fmt(savingsTotal)}</td>
+            </tr>`);
+        }
+
+        body.innerHTML = rows.join('');
+        document.getElementById('annual-grand-total').textContent = fmt(cumulative);
     }
 
     // ── Global Controls ───────────────────────────────────────────
+
+    // Discount/years changes trigger annual projection update
+    document.getElementById('annual-discount').addEventListener('change', () => updateSummary());
+    document.getElementById('annual-discount').addEventListener('input', () => updateSummary());
+    document.getElementById('projection-years').addEventListener('change', () => updateSummary());
+    document.getElementById('projection-years').addEventListener('input', () => updateSummary());
 
     // Refresh prices — reloads from local snapshot file
     document.getElementById('btn-refresh-prices').addEventListener('click', async () => {

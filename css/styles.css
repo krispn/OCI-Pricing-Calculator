@@ -36,6 +36,16 @@ body {
     gap: 16px;
 }
 
+.header-total {
+    font-size: 22px;
+    font-weight: 700;
+    color: #4fc3f7;
+    letter-spacing: -0.5px;
+    padding: 0 16px;
+    border-left: 2px solid rgba(255,255,255,0.2);
+    border-right: 2px solid rgba(255,255,255,0.2);
+}
+
 .header-right {
     display: flex;
     align-items: center;
@@ -283,6 +293,46 @@ body {
 }
 
 /* ── Summary Actions ───────────────────────────────────────── */
+.annual-projection {
+    padding: 0 24px 24px;
+}
+
+.annual-projection h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #1a1a2e;
+}
+
+.discount-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.discount-controls label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #555;
+}
+
+.discount-controls input {
+    padding: 4px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.annual-table {
+    max-width: 700px;
+}
+
+.annual-table td:nth-child(n+2),
+.annual-table th:nth-child(n+2) {
+    text-align: right;
+}
+
 .summary-actions {
     display: flex;
     gap: 10px;

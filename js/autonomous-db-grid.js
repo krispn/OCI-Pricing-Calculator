@@ -74,14 +74,30 @@ const AutonomousDbGrid = (() => {
 
     function updateTotals() {
         let totalHourly = 0, totalMonthly = 0;
+        let totalEcpus = 0, totalStorageGb = 0;
         gridApi.forEachNode(node => {
-            totalHourly += node.data.hourlyRate || 0;
-            totalMonthly += node.data.monthlyRate || 0;
+            const d = node.data;
+            const qty = d.quantity || 1;
+            totalHourly += d.hourlyRate || 0;
+            totalMonthly += d.monthlyRate || 0;
+            totalEcpus += (d.ecpuCount || 0) * qty;
+            totalStorageGb += (d.storageGb || 0) * qty;
         });
         const el = document.getElementById('autonomous-db-totals');
         if (el) {
             el.innerHTML = `<strong>Autonomous DB Totals:</strong> $${totalHourly.toFixed(4)}/hr &nbsp;|&nbsp; $${totalMonthly.toFixed(2)}/month`;
         }
+        gridApi.setGridOption('pinnedBottomRowData', [{
+            description: 'TOTALS',
+            service: '',
+            ecpuCount: totalEcpus,
+            storageGb: totalStorageGb,
+            fsdr: null,
+            quantity: null,
+            hourlyRate: totalHourly,
+            monthlyRate: totalMonthly,
+            notes: '',
+        }]);
         if (onTotalsChanged) onTotalsChanged();
     }
 
@@ -220,6 +236,12 @@ const AutonomousDbGrid = (() => {
             onCellValueChanged,
             stopEditingWhenCellsLoseFocus: true,
             singleClickEdit: true,
+            onCellEditingStarted: (params) => {
+                if (params.node.isRowPinned()) params.api.stopEditing();
+            },
+            getRowStyle: (params) => {
+                if (params.node.isRowPinned()) return { fontWeight: 'bold', backgroundColor: '#e8f0fe' };
+            },
         };
 
         const container = document.getElementById(containerId);

@@ -136,14 +136,39 @@ const ComputeGrid = (() => {
 
     function updateTotals() {
         let totalHourly = 0, totalMonthly = 0;
+        let serverCount = 0, totalOcpus = 0, totalMemory = 0;
+        let totalBootVol = 0, totalBlockVol = 0, fsdrCount = 0;
         gridApi.forEachNode(node => {
-            totalHourly += node.data.hourlyRate || 0;
-            totalMonthly += node.data.monthlyRate || 0;
+            const d = node.data;
+            const qty = d.quantity || 1;
+            totalHourly += d.hourlyRate || 0;
+            totalMonthly += d.monthlyRate || 0;
+            serverCount += qty;
+            totalOcpus += (d.ocpus || 0) * qty;
+            totalMemory += (d.memoryGb || 0) * qty;
+            totalBootVol += (d.bootVolumeGb || 0) * qty;
+            totalBlockVol += (d.blockVolumeGb || 0) * qty;
+            if (d.fsdr) fsdrCount += qty;
         });
         const el = document.getElementById('compute-totals');
         if (el) {
             el.innerHTML = `<strong>Compute Totals:</strong> $${totalHourly.toFixed(4)}/hr &nbsp;|&nbsp; $${totalMonthly.toFixed(2)}/month`;
         }
+        gridApi.setGridOption('pinnedBottomRowData', [{
+            description: `TOTALS (${serverCount} servers, ${fsdrCount} FSDR)`,
+            shape: '', os: '', capacityType: '',
+            ocpus: totalOcpus,
+            memoryGb: totalMemory,
+            bootVolumeGb: totalBootVol,
+            bootVolumePerf: '',
+            blockVolumeGb: totalBlockVol,
+            blockVolumePerf: '',
+            fsdr: null,
+            quantity: serverCount,
+            hourlyRate: totalHourly,
+            monthlyRate: totalMonthly,
+            notes: '',
+        }]);
         if (onTotalsChanged) onTotalsChanged();
     }
 
@@ -352,6 +377,12 @@ const ComputeGrid = (() => {
             onCellValueChanged,
             stopEditingWhenCellsLoseFocus: true,
             singleClickEdit: true,
+            onCellEditingStarted: (params) => {
+                if (params.node.isRowPinned()) params.api.stopEditing();
+            },
+            getRowStyle: (params) => {
+                if (params.node.isRowPinned()) return { fontWeight: 'bold', backgroundColor: '#e8f0fe' };
+            },
         };
 
         const container = document.getElementById(containerId);

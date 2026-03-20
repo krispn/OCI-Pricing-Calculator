@@ -84,14 +84,39 @@ const DatabaseGrid = (() => {
 
     function updateTotals() {
         let totalHourly = 0, totalMonthly = 0;
+        let dbCount = 0, totalStorageGb = 0, totalOcpus = 0, totalEcpus = 0;
         gridApi.forEachNode(node => {
-            totalHourly += node.data.hourlyRate || 0;
-            totalMonthly += node.data.monthlyRate || 0;
+            const d = node.data;
+            const qty = d.quantity || 1;
+            totalHourly += d.hourlyRate || 0;
+            totalMonthly += d.monthlyRate || 0;
+            dbCount += qty;
+            totalStorageGb += (d.storageGb || 0) * qty;
+            const svcDef = DB_SERVICES[d.service];
+            if (svcDef?.unit === 'ECPU') {
+                totalEcpus += (d.cpuCount || 0) * qty;
+            } else {
+                totalOcpus += (d.cpuCount || 0) * qty;
+            }
         });
         const el = document.getElementById('database-totals');
         if (el) {
             el.innerHTML = `<strong>Database Totals:</strong> $${totalHourly.toFixed(4)}/hr &nbsp;|&nbsp; $${totalMonthly.toFixed(2)}/month`;
         }
+        const cpuLabel = [];
+        if (totalOcpus > 0) cpuLabel.push(`${totalOcpus} OCPUs`);
+        if (totalEcpus > 0) cpuLabel.push(`${totalEcpus} ECPUs`);
+        gridApi.setGridOption('pinnedBottomRowData', [{
+            description: `TOTALS (${dbCount} DBs${cpuLabel.length ? ' - ' + cpuLabel.join(', ') : ''})`,
+            service: '',
+            cpuCount: totalOcpus + totalEcpus,
+            storageGb: totalStorageGb,
+            fsdr: null,
+            quantity: dbCount,
+            hourlyRate: totalHourly,
+            monthlyRate: totalMonthly,
+            notes: '',
+        }]);
         if (onTotalsChanged) onTotalsChanged();
     }
 
@@ -230,6 +255,12 @@ const DatabaseGrid = (() => {
             onCellValueChanged,
             stopEditingWhenCellsLoseFocus: true,
             singleClickEdit: true,
+            onCellEditingStarted: (params) => {
+                if (params.node.isRowPinned()) params.api.stopEditing();
+            },
+            getRowStyle: (params) => {
+                if (params.node.isRowPinned()) return { fontWeight: 'bold', backgroundColor: '#e8f0fe' };
+            },
         };
 
         const container = document.getElementById(containerId);

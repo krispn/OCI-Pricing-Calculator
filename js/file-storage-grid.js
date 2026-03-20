@@ -32,12 +32,24 @@ const FileStorageGrid = (() => {
     }
 
     function updateTotals() {
-        let totalMonthly = 0;
-        gridApi.forEachNode(node => { totalMonthly += node.data.monthlyRate || 0; });
+        let totalMonthly = 0, totalSizeGb = 0;
+        gridApi.forEachNode(node => {
+            const d = node.data;
+            const qty = d.quantity || 1;
+            totalMonthly += d.monthlyRate || 0;
+            totalSizeGb += (d.sizeGb || 0) * qty;
+        });
         const el = document.getElementById('file-storage-totals');
         if (el) {
             el.innerHTML = `<strong>File Storage Totals:</strong> $${totalMonthly.toFixed(2)}/month`;
         }
+        gridApi.setGridOption('pinnedBottomRowData', [{
+            description: 'TOTALS',
+            sizeGb: totalSizeGb,
+            quantity: null,
+            monthlyRate: totalMonthly,
+            notes: '',
+        }]);
         if (onTotalsChanged) onTotalsChanged();
     }
 
@@ -131,6 +143,12 @@ const FileStorageGrid = (() => {
             onCellValueChanged,
             stopEditingWhenCellsLoseFocus: true,
             singleClickEdit: true,
+            onCellEditingStarted: (params) => {
+                if (params.node.isRowPinned()) params.api.stopEditing();
+            },
+            getRowStyle: (params) => {
+                if (params.node.isRowPinned()) return { fontWeight: 'bold', backgroundColor: '#e8f0fe' };
+            },
         };
 
         const container = document.getElementById(containerId);

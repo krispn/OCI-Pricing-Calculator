@@ -76,14 +76,35 @@ const ExadataGrid = (() => {
 
     function updateTotals() {
         let totalHourly = 0, totalMonthly = 0;
+        let totalEcpus = 0, totalVms = 0, totalVmFs = 0, totalSmartDb = 0, totalFlashCache = 0;
         gridApi.forEachNode(node => {
-            totalHourly += node.data.hourlyRate || 0;
-            totalMonthly += node.data.monthlyRate || 0;
+            const d = node.data;
+            const qty = d.quantity || 1;
+            totalHourly += d.hourlyRate || 0;
+            totalMonthly += d.monthlyRate || 0;
+            totalEcpus += (d.ecpuCount || 0) * (d.vmCount || 1) * qty;
+            totalVms += (d.vmCount || 0) * qty;
+            totalVmFs += (d.vmFsStorageGb || 0) * (d.vmCount || 1) * qty;
+            totalSmartDb += (d.smartStorageGb || 0) * qty;
+            totalFlashCache += (d.flashCacheGb || 0) * qty;
         });
         const el = document.getElementById('exadata-totals');
         if (el) {
             el.innerHTML = `<strong>Exadata Totals:</strong> $${totalHourly.toFixed(4)}/hr &nbsp;|&nbsp; $${totalMonthly.toFixed(2)}/month`;
         }
+        gridApi.setGridOption('pinnedBottomRowData', [{
+            description: 'TOTALS',
+            service: '',
+            ecpuCount: totalEcpus,
+            vmCount: totalVms,
+            vmFsStorageGb: totalVmFs,
+            smartStorageGb: totalSmartDb,
+            flashCacheGb: totalFlashCache,
+            quantity: null,
+            hourlyRate: totalHourly,
+            monthlyRate: totalMonthly,
+            notes: '',
+        }]);
         if (onTotalsChanged) onTotalsChanged();
     }
 
@@ -224,6 +245,12 @@ const ExadataGrid = (() => {
             onCellValueChanged,
             stopEditingWhenCellsLoseFocus: true,
             singleClickEdit: true,
+            onCellEditingStarted: (params) => {
+                if (params.node.isRowPinned()) params.api.stopEditing();
+            },
+            getRowStyle: (params) => {
+                if (params.node.isRowPinned()) return { fontWeight: 'bold', backgroundColor: '#e8f0fe' };
+            },
         };
 
         const container = document.getElementById(containerId);

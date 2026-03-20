@@ -24,6 +24,9 @@
             <h1>OCI Pricing Calculator</h1>
             <span id="pricing-status" class="pricing-status">Loading prices...</span>
         </div>
+        <div class="header-total">
+            <span id="running-total">$0.00/month</span>
+        </div>
         <div class="header-right">
             <label for="currency-select">Currency:</label>
             <select id="currency-select">
@@ -154,6 +157,34 @@
                     </table>
                 </div>
                 <div class="summary-chart" id="summary-chart"></div>
+            </div>
+            <div class="annual-projection">
+                <h3>Annual Cost Projection</h3>
+                <div class="discount-controls">
+                    <label for="annual-discount">Discount %:</label>
+                    <input type="number" id="annual-discount" value="0" min="0" max="100" step="0.5" style="width: 70px;">
+                    <label for="projection-years">Years:</label>
+                    <input type="number" id="projection-years" value="3" min="1" max="10" step="1" style="width: 50px;">
+                </div>
+                <table class="summary-table annual-table">
+                    <thead>
+                        <tr>
+                            <th>Period</th>
+                            <th>Monthly</th>
+                            <th>Annual</th>
+                            <th>Cumulative</th>
+                        </tr>
+                    </thead>
+                    <tbody id="annual-body"></tbody>
+                    <tfoot>
+                        <tr class="summary-grand-total">
+                            <td>Total</td>
+                            <td></td>
+                            <td></td>
+                            <td id="annual-grand-total">$0.00</td>
+                        </tr>
+                    </tfoot>
+                </table>
             </div>
             <div class="summary-actions">
                 <button id="btn-export-excel" class="btn btn-primary">Export All to Excel</button>

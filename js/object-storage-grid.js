@@ -60,12 +60,28 @@ const ObjectStorageGrid = (() => {
     }
 
     function updateTotals() {
-        let totalMonthly = 0;
-        gridApi.forEachNode(node => { totalMonthly += node.data.monthlyRate || 0; });
+        let totalMonthly = 0, totalSizeGb = 0, totalRetrievalGb = 0;
+        gridApi.forEachNode(node => {
+            const d = node.data;
+            const qty = d.quantity || 1;
+            totalMonthly += d.monthlyRate || 0;
+            totalSizeGb += (d.sizeGb || 0) * qty;
+            totalRetrievalGb += (d.retrievalGb || 0) * qty;
+        });
         const el = document.getElementById('object-storage-totals');
         if (el) {
             el.innerHTML = `<strong>Object Storage Totals:</strong> $${totalMonthly.toFixed(2)}/month`;
         }
+        gridApi.setGridOption('pinnedBottomRowData', [{
+            description: 'TOTALS',
+            tier: '',
+            sizeGb: totalSizeGb,
+            requestsPerMonth10k: null,
+            retrievalGb: totalRetrievalGb,
+            quantity: null,
+            monthlyRate: totalMonthly,
+            notes: '',
+        }]);
         if (onTotalsChanged) onTotalsChanged();
     }
 
@@ -186,6 +202,12 @@ const ObjectStorageGrid = (() => {
             onCellValueChanged,
             stopEditingWhenCellsLoseFocus: true,
             singleClickEdit: true,
+            onCellEditingStarted: (params) => {
+                if (params.node.isRowPinned()) params.api.stopEditing();
+            },
+            getRowStyle: (params) => {
+                if (params.node.isRowPinned()) return { fontWeight: 'bold', backgroundColor: '#e8f0fe' };
+            },
         };
 
         const container = document.getElementById(containerId);
@@ -231,5 +253,41 @@ const ObjectStorageGrid = (() => {
         return total;
     }
 
-    return { init, recalcAll, getGridApi, getAllData, loadData, getMonthlyTotal };
+    /**
+     * Update (or create) the default backup row sized at 3x compute boot+block volume.
+     */
+    function updateBackupRow(totalComputeStorageGb) {
+        if (!gridApi) return;
+        const backupSizeGb = totalComputeStorageGb * 3;
+
+        // Find existing backup row
+        let backupNode = null;
+        gridApi.forEachNode(node => {
+            if (node.data._isBackupDefault) backupNode = node;
+        });
+
+        if (backupNode) {
+            backupNode.data.sizeGb = backupSizeGb;
+            const costs = calculateRowCost(backupNode.data);
+            backupNode.data.monthlyRate = costs.monthlyRate;
+            gridApi.refreshCells({ rowNodes: [backupNode] });
+        } else if (backupSizeGb > 0) {
+            const row = {
+                _isBackupDefault: true,
+                description: 'Backup (Default - 3x Boot+Block Volume)',
+                tier: 'Standard',
+                sizeGb: backupSizeGb,
+                requestsPerMonth10k: 10000,
+                retrievalGb: 0,
+                quantity: 1,
+                monthlyRate: 0,
+            };
+            const costs = calculateRowCost(row);
+            row.monthlyRate = costs.monthlyRate;
+            gridApi.applyTransaction({ add: [row] });
+        }
+        updateTotals();
+    }
+
+    return { init, recalcAll, getGridApi, getAllData, loadData, getMonthlyTotal, updateBackupRow };
 })();
