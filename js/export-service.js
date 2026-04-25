@@ -189,7 +189,7 @@ const ExportService = (() => {
         const metaWs = XLSX.utils.json_to_sheet(metaData);
         XLSX.utils.book_append_sheet(wb, metaWs, 'Info');
 
-        XLSX.writeFile(wb, `oci-estimate-${formatDate()}.xlsx`);
+        XLSX.writeFile(wb, buildFilename('oci-estimate', 'xlsx'));
     }
 
     function formatCurrencyColumns(ws, rowCount, colIndices) {
@@ -204,6 +204,13 @@ const ExportService = (() => {
     function formatDate() {
         const d = new Date();
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function buildFilename(base, ext) {
+        const raw = (document.getElementById('filename-prefix')?.value || '').trim();
+        const safe = raw.replace(/[^A-Za-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '');
+        const prefix = safe ? `${safe}_` : '';
+        return `${prefix}${base}-${formatDate()}.${ext}`;
     }
 
     /**
@@ -227,7 +234,7 @@ const ExportService = (() => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `oci-estimate-${formatDate()}.json`;
+        a.download = buildFilename('oci-estimate', 'json');
         a.click();
         URL.revokeObjectURL(url);
     }
@@ -1045,7 +1052,7 @@ const ExportService = (() => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `oci-estimate-oracle-${formatDate()}.json`;
+        a.download = buildFilename('oci-estimate-oracle', 'json');
         a.click();
         URL.revokeObjectURL(url);
     }

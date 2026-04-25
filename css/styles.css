@@ -171,6 +171,36 @@ body {
     flex: 1;
 }
 
+.grid-defaults-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 24px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e8e8e8;
+    font-size: 13px;
+}
+
+.grid-defaults-bar .defaults-label {
+    font-weight: 500;
+    color: #555;
+}
+
+.grid-defaults-bar label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #444;
+}
+
+.grid-defaults-bar select {
+    padding: 4px 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+    background: #fff;
+}
+
 /* ── Grid Container ────────────────────────────────────────── */
 .grid-container {
     height: calc(100vh - 260px);
@@ -337,6 +367,32 @@ body {
     display: flex;
     gap: 10px;
     padding: 0 24px 24px;
+}
+
+.filename-prefix-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 24px 12px;
+    font-size: 13px;
+}
+
+.filename-prefix-controls label {
+    font-weight: 500;
+    color: #444;
+}
+
+.filename-prefix-controls input {
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.filename-hint {
+    color: #888;
+    font-style: italic;
+    font-size: 12px;
 }
 
 /* ── AG Grid Overrides ─────────────────────────────────────── */

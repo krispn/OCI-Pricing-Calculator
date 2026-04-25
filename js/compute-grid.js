@@ -35,11 +35,29 @@ const ComputeGrid = (() => {
         return tier ? tier.value : 10;
     }
 
+    const DEFAULTS_KEY = 'compute.defaults';
+
+    function loadDefaults() {
+        try {
+            const raw = localStorage.getItem(DEFAULTS_KEY);
+            if (raw) return JSON.parse(raw);
+        } catch (e) { /* ignore */ }
+        return { shape: 'VM.Standard.E5.Flex', os: 'Oracle Linux' };
+    }
+
+    function saveDefaults(d) {
+        try { localStorage.setItem(DEFAULTS_KEY, JSON.stringify(d)); } catch (e) { /* ignore */ }
+    }
+
     function createDefaultRow() {
+        const d = loadDefaults();
+        const shape = getShapeByName(d.shape) ? d.shape : 'VM.Standard.E5.Flex';
+        const osOptions = getOSOptions(shape);
+        const os = osOptions.includes(d.os) ? d.os : osOptions[0];
         return {
             description: '',
-            shape: 'VM.Standard.E5.Flex',
-            os: 'Oracle Linux',
+            shape,
+            os,
             ocpus: 1,
             memoryGb: 16,
             bootVolumeGb: 47,
@@ -362,6 +380,45 @@ const ComputeGrid = (() => {
         },
     ];
 
+    function initDefaultsBar() {
+        const shapeSel = document.getElementById('compute-default-shape');
+        const osSel = document.getElementById('compute-default-os');
+        if (!shapeSel || !osSel) return;
+
+        const current = loadDefaults();
+
+        function populateShapes() {
+            const shapes = getShapeNames();
+            shapeSel.innerHTML = shapes.map(s => `<option value="${s}">${s}</option>`).join('');
+            const chosen = shapes.includes(current.shape) ? current.shape : shapes[0];
+            shapeSel.value = chosen;
+            current.shape = chosen;
+        }
+
+        function populateOS() {
+            const opts = getOSOptions(current.shape);
+            osSel.innerHTML = opts.map(o => `<option value="${o}">${o}</option>`).join('');
+            const chosen = opts.includes(current.os) ? current.os : opts[0];
+            osSel.value = chosen;
+            current.os = chosen;
+        }
+
+        populateShapes();
+        populateOS();
+        saveDefaults(current);
+
+        shapeSel.addEventListener('change', () => {
+            current.shape = shapeSel.value;
+            populateOS();
+            saveDefaults(current);
+        });
+
+        osSel.addEventListener('change', () => {
+            current.os = osSel.value;
+            saveDefaults(current);
+        });
+    }
+
     function init(containerId, totalsCallback) {
         onTotalsChanged = totalsCallback;
 
@@ -387,6 +444,8 @@ const ComputeGrid = (() => {
 
         const container = document.getElementById(containerId);
         gridApi = agGrid.createGrid(container, gridOptions);
+
+        initDefaultsBar();
 
         // Wire up buttons
         document.getElementById('btn-add-compute').addEventListener('click', () => {

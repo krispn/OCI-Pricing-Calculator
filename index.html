@@ -58,6 +58,11 @@
                 <div class="toolbar-spacer"></div>
                 <button id="btn-export-compute-csv" class="btn btn-secondary">Export CSV</button>
             </div>
+            <div class="grid-defaults-bar">
+                <span class="defaults-label">Defaults for new rows:</span>
+                <label>Shape: <select id="compute-default-shape"></select></label>
+                <label>OS: <select id="compute-default-os"></select></label>
+            </div>
             <div id="compute-grid" class="ag-theme-alpine grid-container"></div>
             <div class="tab-totals" id="compute-totals"></div>
         </section>
@@ -185,6 +190,11 @@
                         </tr>
                     </tfoot>
                 </table>
+            </div>
+            <div class="filename-prefix-controls">
+                <label for="filename-prefix">File name prefix (optional):</label>
+                <input type="text" id="filename-prefix" placeholder="e.g. AcmeCorp" maxlength="60" style="width: 240px;">
+                <span class="filename-hint">Prepended to exported file names</span>
             </div>
             <div class="summary-actions">
                 <button id="btn-export-excel" class="btn btn-primary">Export All to Excel</button>
